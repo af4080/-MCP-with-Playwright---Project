@@ -55,6 +55,7 @@ async def get_forecast_content_israel():
     content = await page.inner_text(".forecast-wrap")
     return f"מידע על התחזית שנמצא בדף:\n{content[:2000]}"
 
+
 def main():
     mcp.run(transport="stdio")
 
