@@ -30,7 +30,7 @@ async def open_weather_forecast_israel():
 async def enter_weather_forecast_city_israel(city_name: str):
     """מזין את שם העיר בשדה החיפוש ומחכה להצעות"""
     page = await get_page()
-    selector = "#city_search_forecast" # הסלקטור המדויק באתר
+    selector = "#city_search_forecast" 
     await page.wait_for_selector(selector)
     await page.fill(selector, city_name)
     # מחכים רגע שה-Autocomplete יופיע
@@ -47,17 +47,29 @@ async def select_weather_forecast_city_israel():
     return f"העיר נבחרה. כתובת הדף הנוכחי: {page.url}"
 
 @mcp.tool()
-async def get_forecast_content_israel():
-    """שלב ב': מחלץ את הטקסט של התחזית מהדף עבור ה-LLM"""
+async def get_forecast_summary_israel() -> str:
+    """
+    מחלץ ומנקה את טקסט התחזית מהדף הנוכחי.
+    יש להשתמש בכלי זה לאחר בחירת עיר כדי לקבל את נתוני מזג האוויר האמיתיים.
+    """
     page = await get_page()
-    # חילוץ תוכן מהאלמנט הראשי של התחזית
-    # האתר משתמש ב-ID או Class ספציפי לטבלת התחזית
-    content = await page.inner_text(".forecast-wrap")
-    return f"מידע על התחזית שנמצא בדף:\n{content[:2000]}"
-
-
-def main():
-    mcp.run(transport="stdio")
+    
+    if not page:
+        return "Error: Browser not opened. Please call open_weather_forecast_israel first."
+    
+    try:
+        # המתנה לטעינת הנתונים
+        await page.wait_for_load_state("networkidle")
+        
+        # חילוץ הטקסט וניקוי רווחים מיותרים
+        raw_text = await page.evaluate("() => document.body.innerText")
+        clean_text = " ".join(raw_text.split())
+        
+        # החזרת המידע הרלוונטי (מוגבל ל-2000 תווים)
+        return f"תוכן התחזית שחולץ מהדף:\n{clean_text[:2000]}"
+        
+    except Exception as e:
+        return f"Error extracting content: {str(e)}"
 
 if __name__ == "__main__":
-    main()
+    mcp.run(transport="stdio")
